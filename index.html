@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini Camera Window</title>
+  <style>
+    #camera-container {
+      border: 2px solid #333;
+      width: 320px;
+      height: 240px;
+      position: relative;
+      margin-bottom: 10px;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h3>Camera Preview:</h3>
+<div id="camera-container">
+  <video id="video" autoplay muted playsinline></video>
+</div>
+
+<div class="controls">
+  <button onclick="switchCamera()">Switch Camera</button>
+  <button onclick="toggleFlash()">Toggle Flash</button>
+</div>
+
+<script>
+  let currentFacingMode = "environment";
+  let stream = null;
+  let track = null;
+  let flashOn = false;
+
+  async function startCamera() {
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+    }
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: currentFacingMode } },
+        audio: false
+      });
+
+      const video = document.getElementById("video");
+      video.srcObject = stream;
+
+      track = stream.getVideoTracks()[0];
+    } catch (err) {
+      console.error("Camera error:", err);
+      alert("Could not access camera: " + err.message);
+    }
+  }
+
+  function switchCamera() {
+    currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+    startCamera();
+  }
+
+  async function toggleFlash() {
+    if (!track) return alert("Camera not initialized.");
+    const capabilities = track.getCapabilities();
+    if (!capabilities.torch) return alert("Torch not supported.");
+
+    try {
+      flashOn = !flashOn;
+      await track.applyConstraints({ advanced: [{ torch: flashOn }] });
+    } catch (err) {
+      console.error("Flash error:", err);
+      alert("Failed to toggle flash.");
+    }
+  }
+
+  // Start rear camera by default
+  startCamera();
+</script>
+
+</body>
+</html>
